@@ -49,6 +49,10 @@ var gatePos = [30, 290, 550];
 var activeGates = 0;
 var gateClearedActionRunning = false;
 
+var testDudes = new Array();
+
+var oldX = -1;
+
 function create() {
     timer = game.time.create(false);
     timer.start();
@@ -127,6 +131,22 @@ function create() {
     // Gates
     initGates();
     
+    // testDudes
+    for (var v10 = 0 ; v10 < 10 ; v10++) {
+    	var y = v10 * 48;
+	    for (var s10 = 0 ; s10 < 10 ; s10++) {
+	    	var x = s10 * 32;
+	        var dude = game.add.sprite(x, y, 'dude');
+	        testDudes.push(dude);
+	        dude.frame = 4;
+	        dude.s = s10 / 10;
+	        dude.v = v10 / 10;
+	    	var color = Phaser.Color.HSVColorWheel(dude.s, dude.v)[0];
+	    	var string = Phaser.Color.getColor(color.r, color.g, color.b);
+	    	dude.tint = string;
+	    }
+    }
+    
 }
 
 function update() {
@@ -188,6 +208,18 @@ function update() {
     if ( ! gateClearedActionRunning && activeGates <= 0) {
     	gateClearedActionRunning = true;
     	timer.add(300, addPrize, this);
+    }
+
+    var pX = Phaser.Math.clamp(Math.floor(player.x) - 10, 0, 359);
+    if (oldX != pX) {
+    	console.log(pX);
+    	oldX = pX;
+	    for (var i in testDudes) {
+	    	var dude = testDudes[i];
+	    	var color = Phaser.Color.HSVColorWheel(dude.s, dude.v)[pX];
+	    	var string = Phaser.Color.getColor(color.r, color.g, color.b);
+	    	dude.tint = string;
+	    }
     }
 }
 

@@ -52,7 +52,7 @@ var timer;
 var emitter;
 
 var MAX_VALUE_LIMIT = 20;
-var valueLimit = 1;
+var valueLimit = 5;
 var activeGates = 0;
 var gateClearedActionRunning = false;
 
@@ -322,10 +322,16 @@ function confetti(gate) {
     emitter.start(true, 2400, null, 1);
 }
 
-function createGate(x, y) {
- 	var nodeType = Math.random() > 0.5 ? NodeTypeEnum.PLUS : NodeTypeEnum.MINUS;
-    var value1 = Math.ceil(Math.random() * (valueLimit + 1)) - 1;
-    var value2 = Math.ceil(Math.random() * (valueLimit + 1)) - 1;
+function createGateValues() {
+    var nodeType = Math.random() > 0.5 ? NodeTypeEnum.PLUS : NodeTypeEnum.MINUS;
+    var minValue = 0;
+    if (valueLimit > 12) {
+        minValue = 8;
+    } else if (valueLimit > 6) {
+        minValue = 5;
+    }
+    var value1 = Math.ceil(Math.random() * ((valueLimit - minValue) + 1)) - 1 + minValue;
+    var value2 = Math.ceil(Math.random() * ((valueLimit - minValue) + 1)) - 1 + minValue;
     // Gravitate towards bigger values.
     var value = Math.max(value1, value2);
     var a1 = Math.floor(Math.random() * (value + 1));
@@ -341,15 +347,27 @@ function createGate(x, y) {
     	b = m_b;
     	value = m_v;
     }
+    // DEBUG
+    console.log(a +  (nodeType == NodeTypeEnum.MINUS ? " - " : " + ") + b + " = " + value);
+    return {
+        a: a,
+        b: b,
+        value: value,
+        nodeType: nodeType,
+    };
+}
+
+function createGate(x, y) {
+    var values = createGateValues();
     
     var conf = [
         {
             nodeType: NodeTypeEnum.PLUS,
-            value: a
+            value: values.a
         },
         {
-            nodeType: nodeType,
-            value: b
+            nodeType: values.nodeType,
+            value: values.b
         },
         {
             nodeType: NodeTypeEnum.VALUE,

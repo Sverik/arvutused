@@ -51,7 +51,7 @@ var scoreText;
 var timer;
 var emitter;
 
-var MAX_VALUE_LIMIT = 14;
+var MAX_VALUE_LIMIT = 20;
 var valueLimit = 1;
 var activeGates = 0;
 var gateClearedActionRunning = false;
@@ -71,6 +71,8 @@ var PrizeStatus = {
 var prizeStatus = PrizeStatus.NA;
 var prizeBeingOpened = null;
 
+var placed = false;
+
 function create() {
     timer = game.time.create(false);
     timer.start();
@@ -78,7 +80,7 @@ function create() {
     //  We're going to be using physics, so enable the Arcade Physics system
     game.physics.startSystem(Phaser.Physics.ARCADE);
     
-    game.world.resize(5000, 600);
+    game.world.resize(BACKGROUND_WIDTH + 2 * 800, 600);
 
     //  A simple background for our game
     game.add.sprite(0, 0, 'sky').scale.setTo(20, 1);
@@ -168,6 +170,13 @@ function create() {
     
 }
 
+function wrapCondition(extra) {
+    if (typeof extra === 'undefined') {
+        extra = 0;
+    }
+    return player.body.x + extra > BACKGROUND_WIDTH + this.game.width;
+}
+
 function update() {
 
     //  Collide the player and the stars with the platforms
@@ -212,15 +221,25 @@ function update() {
         player.body.velocity.y = -350;
     }
     
+    // DEBUG
+    if (cursors.down.isDown && false) {
+    	if ( ! placed) {
+    		placed = true;
+    		initGates();
+    	}
+    } else {
+    	placed = false;
+    }
+    
     // wrap, if needed
-    if (/*! wrapping && */player.body.x > BACKGROUND_WIDTH + this.game.width) {
+    if (/*! wrapping && */wrapCondition()) {
     	wrapping = true;
     	var wrapTo = player.body.x % BACKGROUND_WIDTH;
-//     	console.log("wrapping at " + player.body.x + ", to " + wrapTo);
+     	console.log("wrapping at " + player.body.x + ", to " + wrapTo);
     	this.game.world.wrap(player, -wrapTo, false, true, false);
-//     	console.log("wrapped to " + player.body.x);
+     	console.log("wrapped to " + player.body.x);
     } else if (wrapping && player.body.x <= BACKGROUND_WIDTH + this.game.width) {
-    	console.log("wrap completed");
+    	console.log("wrap completed to " + player.body.x);
     	wrapping = false;
     }
     
@@ -279,16 +298,19 @@ function unlockPrize() {
     prizeBeingOpened.input.useHandCursor = true;
     prizeBeingOpened = null;
 */
-	timer.add(1100, initGates, this);
+ 	timer.add(1100, initGates, this);
 }
 
 function initGates() {
-    var placeAt = player.body.x + 240;
-    if (placeAt + 80 > game.world.width) {
-        placeAt = 240;
+    var placeOffset = 800 / 2 + 50;
+    if (wrapCondition(placeOffset)) {
+        console.log("unsafe to init gate, rescheduling");
+        timer.add(200, initGates, this);
+        return;
     }
-	console.log("init gate " + placeAt);
-	createGate(placeAt, 500);
+    var placeAt = player.body.x + placeOffset;
+    console.log("init gate " + placeAt);
+    createGate(placeAt, 500);
     gateClearedActionRunning = false;
     prizeStatus = PrizeStatus.NA;
 }
@@ -338,7 +360,7 @@ function createGate(x, y) {
     var gate = new Gate(conf, x, y, targetGroup, gateBlockGroup, gateProxGroup);
     gate.afterDestroy = function(thisGate) {
     	activeGates--;
-    	if (score % 50 == 0 && valueLimit < MAX_VALUE_LIMIT) {
+    	if (score % 30 == 0 && valueLimit < MAX_VALUE_LIMIT) {
     		valueLimit++;
     		createDispenser(valueLimit);
     	}
